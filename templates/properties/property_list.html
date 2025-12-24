@@ -50,6 +50,7 @@
 <table class="table table-striped">
     <thead>
         <tr>
+            <th>图片</th>
             <th>项目</th>
             <th>位置</th>
             <th>建筑面积(㎡)</th>
@@ -62,6 +63,17 @@
     <tbody>
         {% for property in properties %}
         <tr>
+            <td>
+                {% with main_image=property.get_main_image %}
+                {% if main_image %}
+                <img src="{{ main_image.image.url }}" alt="{{ property }}" style="width: 80px; height: 60px; object-fit: cover; border-radius: 5px;">
+                {% else %}
+                <div style="width: 80px; height: 60px; background: #f8f9fa; border-radius: 5px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-image text-muted"></i>
+                </div>
+                {% endif %}
+                {% endwith %}
+            </td>
             <td>{{ property.project.name }}</td>
             <td>{{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</td>
             <td>{{ property.building_area }}</td>
@@ -82,7 +94,7 @@
         </tr>
         {% empty %}
         <tr>
-            <td colspan="7" class="text-center">暂无房源</td>
+            <td colspan="8" class="text-center">暂无房源</td>
         </tr>
         {% endfor %}
     </tbody>

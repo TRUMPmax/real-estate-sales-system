@@ -1,7 +1,7 @@
 from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Submit, Row, Column
-from .models import Property
+from .models import Property, PropertyImage
 
 
 class PropertyForm(forms.ModelForm):
@@ -62,5 +62,25 @@ class PriceUpdateForm(forms.ModelForm):
             ),
             'reason',
             Submit('submit', '更新价格', css_class='btn-primary')
+        )
+
+
+class PropertyImageForm(forms.ModelForm):
+    """房源图片上传表单"""
+    class Meta:
+        model = PropertyImage
+        fields = ['image', 'description', 'is_main']
+        widgets = {
+            'description': forms.TextInput(attrs={'placeholder': '图片描述（可选）'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'image',
+            'description',
+            'is_main',
+            Submit('submit', '上传图片', css_class='btn-primary')
         )
 

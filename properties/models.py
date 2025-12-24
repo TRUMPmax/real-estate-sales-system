@@ -2,8 +2,14 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
 from projects.models import Project
+import os
 
 User = get_user_model()
+
+
+def property_image_upload_path(instance, filename):
+    """生成房源图片上传路径"""
+    return f'properties/{instance.property.id}/{filename}'
 
 
 class Property(models.Model):
@@ -52,6 +58,14 @@ class Property(models.Model):
         if not self.total_price or self.total_price == 0:
             self.total_price = self.unit_price * self.building_area
         super().save(*args, **kwargs)
+    
+    def get_main_image(self):
+        """获取主图片（第一张图片）"""
+        return self.images.first()
+    
+    def get_images(self):
+        """获取所有图片"""
+        return self.images.all()
 
 
 class PriceHistory(models.Model):
@@ -70,4 +84,27 @@ class PriceHistory(models.Model):
     
     def __str__(self):
         return f"{self.property} - {self.changed_at}"
+
+
+class PropertyImage(models.Model):
+    """房源图片模型"""
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='images', verbose_name='房源')
+    image = models.ImageField(upload_to=property_image_upload_path, verbose_name='图片')
+    description = models.CharField(max_length=200, blank=True, verbose_name='图片描述')
+    is_main = models.BooleanField(default=False, verbose_name='是否为主图')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='上传时间')
+    
+    class Meta:
+        verbose_name = '房源图片'
+        verbose_name_plural = '房源图片'
+        ordering = ['-is_main', 'created_at']
+    
+    def __str__(self):
+        return f"{self.property} - {self.description or '图片'}"
+    
+    def save(self, *args, **kwargs):
+        # 如果设置为主图，取消其他图片的主图状态
+        if self.is_main:
+            PropertyImage.objects.filter(property=self.property, is_main=True).update(is_main=False)
+        super().save(*args, **kwargs)
 

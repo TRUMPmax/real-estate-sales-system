@@ -3,8 +3,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from .models import Property, PriceHistory
-from .forms import PropertyForm, PriceUpdateForm
+from .models import Property, PriceHistory, PropertyImage
+from .forms import PropertyForm, PriceUpdateForm, PropertyImageForm
 from projects.models import Project
 
 
@@ -110,10 +110,12 @@ def property_detail(request, pk):
     """房源详情"""
     property_obj = get_object_or_404(Property, pk=pk)
     price_history = PriceHistory.objects.filter(property=property_obj)[:10]
+    images = property_obj.get_images()
     
     return render(request, 'properties/property_detail.html', {
         'property': property_obj,
         'price_history': price_history,
+        'images': images,
     })
 
 
@@ -166,5 +168,46 @@ def price_update(request, pk):
     return render(request, 'properties/price_form.html', {
         'form': form,
         'property': property_obj,
+    })
+
+
+@login_required
+@user_passes_test(is_manager_or_admin)
+def property_image_upload(request, pk):
+    """上传房源图片 - 仅销售经理和管理员"""
+    property_obj = get_object_or_404(Property, pk=pk)
+    
+    if request.method == 'POST':
+        form = PropertyImageForm(request.POST, request.FILES)
+        if form.is_valid():
+            image = form.save(commit=False)
+            image.property = property_obj
+            image.save()
+            messages.success(request, '图片上传成功')
+            return redirect('properties:property_detail', pk=pk)
+    else:
+        form = PropertyImageForm()
+    
+    return render(request, 'properties/image_upload.html', {
+        'form': form,
+        'property': property_obj,
+    })
+
+
+@login_required
+@user_passes_test(is_manager_or_admin)
+def property_image_delete(request, pk, image_id):
+    """删除房源图片 - 仅销售经理和管理员"""
+    property_obj = get_object_or_404(Property, pk=pk)
+    image = get_object_or_404(PropertyImage, pk=image_id, property=property_obj)
+    
+    if request.method == 'POST':
+        image.delete()
+        messages.success(request, '图片已删除')
+        return redirect('properties:property_detail', pk=pk)
+    
+    return render(request, 'properties/image_confirm_delete.html', {
+        'property': property_obj,
+        'image': image,
     })
 
