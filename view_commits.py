@@ -20,7 +20,7 @@ try:
     )
     
     print("=" * 80)
-    print("Git Commit History (最近10次提交)")
+    print("Git Commit History (Last 10 commits)")
     print("=" * 80)
     print()
     
