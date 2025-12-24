@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
-from .forms import LoginForm, UserCreateForm, UserUpdateForm
+from .forms import LoginForm, UserCreateForm, UserUpdateForm, RegisterForm
 
 User = get_user_model()
 
@@ -33,6 +33,23 @@ def login_view(request):
         form = LoginForm(request)
     
     return render(request, 'accounts/login.html', {'form': form})
+
+
+def register_view(request):
+    """用户注册 - 仅限购房者"""
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+    
+    if request.method == 'POST':
+        form = RegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f'注册成功！欢迎 {user.username}，请登录')
+            return redirect('accounts:login')
+    else:
+        form = RegisterForm()
+    
+    return render(request, 'accounts/register.html', {'form': form})
 
 
 @login_required

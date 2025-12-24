@@ -8,6 +8,7 @@ app_name = 'accounts'
 urlpatterns = [
     path('', RedirectView.as_view(url='login/', permanent=False), name='index'),
     path('login/', views.login_view, name='login'),
+    path('register/', views.register_view, name='register'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('users/', views.user_list, name='user_list'),
