@@ -138,6 +138,60 @@ python manage.py runserver
 3. 根据实际情况修改数据库配置
 4. 生产环境请修改SECRET_KEY
 
+## GitHub 仓库设置
+
+### 推送到GitHub
+
+1. 在GitHub上创建新仓库（不要初始化README）
+2. 连接本地仓库：
+
+```bash
+git remote add origin https://github.com/TRUMPmax/real-estate-sales-system.git
+git branch -M main
+git push -u origin main
+```
+
+### 版本标签
+
+```bash
+# 查看版本标签
+git tag -l
+
+# 恢复到v1.0.0（基础功能版）
+git checkout v1.0.0
+
+# 恢复到v1.0.1（登录页面优化版）
+git checkout v1.0.1
+```
+
+## 常见问题
+
+### 数据库连接问题
+
+如果遇到数据库连接错误，请检查：
+1. MySQL服务是否启动
+2. 数据库 `real_estate_system` 是否已创建
+3. `HSystem/settings.py` 中的数据库配置是否正确
+
+### 创建管理员用户
+
+```bash
+python create_admin_simple.py
+```
+
+或使用自定义参数：
+```bash
+python create_admin_simple.py username email password
+```
+
+### Git中文乱码问题
+
+在Windows PowerShell中，Git提交信息可能显示为乱码。这是编码问题，不影响实际使用。可以通过以下方式查看：
+
+1. 使用Git Bash查看
+2. 在GitHub网页上查看（推送到GitHub后）
+3. 使用 `git tag -l` 查看版本标签
+
 ## 许可证
 
 MIT License
