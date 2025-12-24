@@ -25,7 +25,11 @@
         <div class="login-card">
             <!-- 系统标题 -->
             <div class="system-title">
-                <h1><i class="bi bi-building"></i> 房地产销售管理系统</h1>
+                <h1>
+                    <i class="bi bi-building"></i><br>
+                    <span class="title-line-1">房地产销售</span><br>
+                    <span class="title-line-2">管理系统</span>
+                </h1>
                 <div class="system-subtitle">Real Estate Sales Management System</div>
                 <div class="system-type">Web管理系统</div>
             </div>
@@ -59,8 +63,14 @@
             <!-- 登录表单 -->
             {% crispy form %}
             
-            <!-- 底部信息 -->
+            <!-- 底部信息和注册链接 -->
             <div class="text-center mt-4">
+                <p class="mb-2">
+                    <small class="text-muted">还没有账号？</small>
+                    <a href="{% url 'accounts:register' %}" class="text-decoration-none">
+                        <i class="bi bi-person-plus"></i> 立即注册
+                    </a>
+                </p>
                 <small class="text-muted">
                     <i class="bi bi-shield-check"></i> 安全登录 | 
                     <i class="bi bi-lock"></i> 数据加密保护
