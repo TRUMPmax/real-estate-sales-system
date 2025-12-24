@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}房源列表{% endblock %}
+
+{% block content %}
+<h2>房源管理</h2>
+<hr>
+
+{% if user.is_manager or user.is_admin %}
+<div class="mb-3">
+    <a href="{% url 'properties:property_create' %}" class="btn btn-primary">创建房源</a>
+</div>
+{% endif %}
+
+<form method="get" class="mb-3">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control" placeholder="搜索项目、楼栋或房号" value="{{ search }}">
+        </div>
+        <div class="col-md-2">
+            <select name="project" class="form-select">
+                <option value="">所有项目</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}" {% if project_id == project.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ project.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="">所有状态</option>
+                <option value="available" {% if status == 'available' %}selected{% endif %}>可售</option>
+                <option value="reserved" {% if status == 'reserved' %}selected{% endif %}>已预订</option>
+                <option value="sold" {% if status == 'sold' %}selected{% endif %}>已售</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="min_price" class="form-control" placeholder="最低价" value="{{ min_price }}">
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="max_price" class="form-control" placeholder="最高价" value="{{ max_price }}">
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-secondary w-100">搜索</button>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>项目</th>
+            <th>位置</th>
+            <th>建筑面积(㎡)</th>
+            <th>单价(元/㎡)</th>
+            <th>总价(元)</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for property in properties %}
+        <tr>
+            <td>{{ property.project.name }}</td>
+            <td>{{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</td>
+            <td>{{ property.building_area }}</td>
+            <td>{{ property.unit_price|floatformat:0 }}</td>
+            <td>{{ property.total_price|floatformat:0 }}</td>
+            <td>
+                <span class="badge bg-{% if property.status == 'available' %}success{% elif property.status == 'reserved' %}warning{% else %}secondary{% endif %}">
+                    {{ property.get_status_display }}
+                </span>
+            </td>
+            <td>
+                <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-sm btn-info">详情</a>
+                {% if user.is_manager or user.is_admin %}
+                <a href="{% url 'properties:property_update' property.pk %}" class="btn btn-sm btn-primary">编辑</a>
+                <a href="{% url 'properties:price_update' property.pk %}" class="btn btn-sm btn-warning">调价</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center">暂无房源</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if properties.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if properties.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ properties.previous_page_number }}">上一页</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">第 {{ properties.number }} 页，共 {{ properties.paginator.num_pages }} 页</span></li>
+        {% if properties.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ properties.next_page_number }}">下一页</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+

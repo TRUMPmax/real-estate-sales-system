@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}删除销售记录{% endblock %}
+
+{% block content %}
+<h2>确认删除销售记录</h2>
+<hr>
+
+<p>您确定要删除销售记录吗？</p>
+<p><strong>客户:</strong> {{ sale.customer.name }}</p>
+<p><strong>房源:</strong> {{ sale.property }}</p>
+<p class="text-warning">注意：删除后房源状态将恢复为可售！</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">确认删除</button>
+    <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}项目详情{% endblock %}
+
+{% block content %}
+<h2>项目详情</h2>
+<hr>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h4>{{ project.name }}</h4>
+        <p><strong>地址:</strong> {{ project.address }}</p>
+        <p><strong>开发商:</strong> {{ project.developer }}</p>
+        <p><strong>总楼栋数:</strong> {{ project.total_buildings }}</p>
+        <p><strong>总户数:</strong> {{ project.total_units }}</p>
+        <p><strong>描述:</strong> {{ project.description|default:"无" }}</p>
+        <p><strong>创建时间:</strong> {{ project.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'projects:project_update' project.pk %}" class="btn btn-primary">编辑</a>
+    <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+
+<h4>房源列表</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>楼栋-单元-房号</th>
+            <th>面积(㎡)</th>
+            <th>单价(元/㎡)</th>
+            <th>总价(元)</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for property in properties %}
+        <tr>
+            <td>{{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</td>
+            <td>{{ property.building_area }}</td>
+            <td>{{ property.unit_price }}</td>
+            <td>{{ property.total_price|floatformat:0 }}</td>
+            <td>
+                <span class="badge bg-{% if property.status == 'available' %}success{% elif property.status == 'reserved' %}warning{% else %}secondary{% endif %}">
+                    {{ property.get_status_display }}
+                </span>
+            </td>
+            <td>
+                <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-sm btn-info">详情</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">暂无房源</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

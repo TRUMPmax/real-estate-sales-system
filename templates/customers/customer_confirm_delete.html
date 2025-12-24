@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}删除客户{% endblock %}
+
+{% block content %}
+<h2>确认删除客户</h2>
+<hr>
+
+<p>您确定要删除客户 <strong>{{ customer.name }}</strong> 吗？</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">确认删除</button>
+    <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+

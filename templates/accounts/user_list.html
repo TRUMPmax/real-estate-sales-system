@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}用户列表{% endblock %}
+
+{% block content %}
+<h2>用户管理</h2>
+<hr>
+
+<div class="mb-3">
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">创建用户</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="row">
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control" placeholder="搜索用户名或邮箱" value="{{ search }}">
+        </div>
+        <div class="col-md-3">
+            <select name="role" class="form-select">
+                <option value="">所有角色</option>
+                <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>管理员</option>
+                <option value="manager" {% if role_filter == 'manager' %}selected{% endif %}>销售经理</option>
+                <option value="salesperson" {% if role_filter == 'salesperson' %}selected{% endif %}>业务员</option>
+                <option value="buyer" {% if role_filter == 'buyer' %}selected{% endif %}>购房者</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-secondary">搜索</button>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>用户名</th>
+            <th>邮箱</th>
+            <th>角色</th>
+            <th>电话</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user_obj in users %}
+        <tr>
+            <td>{{ user_obj.username }}</td>
+            <td>{{ user_obj.email }}</td>
+            <td>{{ user_obj.get_role_display }}</td>
+            <td>{{ user_obj.phone }}</td>
+            <td>
+                {% if user_obj.is_active %}
+                <span class="badge bg-success">活跃</span>
+                {% else %}
+                <span class="badge bg-secondary">禁用</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'accounts:user_update' user_obj.pk %}" class="btn btn-sm btn-primary">编辑</a>
+                <a href="{% url 'accounts:user_delete' user_obj.pk %}" class="btn btn-sm btn-danger">删除</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">暂无用户</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if users.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if users.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ users.previous_page_number }}">上一页</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">第 {{ users.number }} 页，共 {{ users.paginator.num_pages }} 页</span></li>
+        {% if users.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ users.next_page_number }}">下一页</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+

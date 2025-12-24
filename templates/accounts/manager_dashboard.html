@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}销售经理仪表板{% endblock %}
+
+{% block content %}
+<h2>销售经理仪表板</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">项目总数</h5>
+                <h2>{{ total_projects }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">房源总数</h5>
+                <h2>{{ total_properties }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h4>快速操作</h4>
+    <a href="{% url 'projects:project_create' %}" class="btn btn-primary">创建项目</a>
+    <a href="{% url 'properties:property_create' %}" class="btn btn-success">创建房源</a>
+    <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">项目列表</a>
+    <a href="{% url 'properties:property_list' %}" class="btn btn-secondary">房源列表</a>
+</div>
+{% endblock %}
+

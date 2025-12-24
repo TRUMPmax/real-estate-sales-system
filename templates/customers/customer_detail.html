@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}客户详情{% endblock %}
+
+{% block content %}
+<h2>客户详情</h2>
+<hr>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h4>{{ customer.name }}</h4>
+        <p><strong>性别:</strong> {{ customer.get_gender_display|default:"未填写" }}</p>
+        <p><strong>电话:</strong> {{ customer.phone }}</p>
+        <p><strong>邮箱:</strong> {{ customer.email|default:"未填写" }}</p>
+        <p><strong>身份证号:</strong> {{ customer.id_card|default:"未填写" }}</p>
+        <p><strong>地址:</strong> {{ customer.address|default:"未填写" }}</p>
+        <p><strong>负责业务员:</strong> {{ customer.salesperson.username|default:"未分配" }}</p>
+        {% if customer.notes %}
+        <p><strong>备注:</strong> {{ customer.notes }}</p>
+        {% endif %}
+        <p><strong>创建时间:</strong> {{ customer.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'customers:customer_update' customer.pk %}" class="btn btn-primary">编辑</a>
+    <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+
+<h4>销售记录</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>房源</th>
+            <th>成交价(元)</th>
+            <th>首付款(元)</th>
+            <th>状态</th>
+            <th>签约日期</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale.property }}</td>
+            <td>{{ sale.sale_price|floatformat:0 }}</td>
+            <td>{{ sale.down_payment|floatformat:0 }}</td>
+            <td>
+                <span class="badge bg-{% if sale.status == 'completed' %}success{% elif sale.status == 'approved' %}info{% elif sale.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                    {{ sale.get_status_display }}
+                </span>
+            </td>
+            <td>{{ sale.contract_date|date:"Y-m-d"|default:"-" }}</td>
+            <td>
+                <a href="{% url 'sales:sale_detail' sale.pk %}" class="btn btn-sm btn-info">详情</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center">暂无销售记录</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+

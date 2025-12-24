@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}房源详情{% endblock %}
+
+{% block content %}
+<h2>房源详情</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>{{ property.project.name }}</h4>
+                <p><strong>位置:</strong> {{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</p>
+                <p><strong>楼层:</strong> {{ property.floor }}层</p>
+                <p><strong>建筑面积:</strong> {{ property.building_area }}㎡</p>
+                <p><strong>套内面积:</strong> {{ property.interior_area }}㎡</p>
+                <p><strong>公摊面积:</strong> {{ property.shared_area }}㎡</p>
+                <p><strong>单价:</strong> ¥{{ property.unit_price|floatformat:0 }}/㎡</p>
+                <p><strong>总价:</strong> ¥{{ property.total_price|floatformat:0 }}</p>
+                <p><strong>状态:</strong> 
+                    <span class="badge bg-{% if property.status == 'available' %}success{% elif property.status == 'reserved' %}warning{% else %}secondary{% endif %}">
+                        {{ property.get_status_display }}
+                    </span>
+                </p>
+                {% if property.location_description %}
+                <p><strong>位置描述:</strong> {{ property.location_description }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if user.is_manager or user.is_admin %}
+<div class="mb-3">
+    <a href="{% url 'properties:property_update' property.pk %}" class="btn btn-primary">编辑</a>
+    <a href="{% url 'properties:price_update' property.pk %}" class="btn btn-warning">调价</a>
+    <a href="{% url 'properties:property_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+{% endif %}
+
+{% if price_history %}
+<h4>价格历史</h4>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>单价(元/㎡)</th>
+            <th>总价(元)</th>
+            <th>调价原因</th>
+            <th>修改人</th>
+            <th>修改时间</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for history in price_history %}
+        <tr>
+            <td>{{ history.unit_price|floatformat:0 }}</td>
+            <td>{{ history.total_price|floatformat:0 }}</td>
+            <td>{{ history.reason|default:"无" }}</td>
+            <td>{{ history.changed_by.username|default:"系统" }}</td>
+            <td>{{ history.changed_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}
+

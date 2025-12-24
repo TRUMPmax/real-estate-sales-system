@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}项目列表{% endblock %}
+
+{% block content %}
+<h2>项目管理</h2>
+<hr>
+
+<div class="mb-3">
+    <a href="{% url 'projects:project_create' %}" class="btn btn-primary">创建项目</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="row">
+        <div class="col-md-6">
+            <input type="text" name="search" class="form-control" placeholder="搜索项目名称或地址" value="{{ search }}">
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-secondary">搜索</button>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>项目名称</th>
+            <th>地址</th>
+            <th>开发商</th>
+            <th>楼栋数</th>
+            <th>户数</th>
+            <th>创建时间</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for project in projects %}
+        <tr>
+            <td>{{ project.name }}</td>
+            <td>{{ project.address }}</td>
+            <td>{{ project.developer }}</td>
+            <td>{{ project.total_buildings }}</td>
+            <td>{{ project.total_units }}</td>
+            <td>{{ project.created_at|date:"Y-m-d" }}</td>
+            <td>
+                <a href="{% url 'projects:project_detail' project.pk %}" class="btn btn-sm btn-info">详情</a>
+                <a href="{% url 'projects:project_update' project.pk %}" class="btn btn-sm btn-primary">编辑</a>
+                <a href="{% url 'projects:project_delete' project.pk %}" class="btn btn-sm btn-danger">删除</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center">暂无项目</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if projects.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if projects.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ projects.previous_page_number }}">上一页</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">第 {{ projects.number }} 页，共 {{ projects.paginator.num_pages }} 页</span></li>
+        {% if projects.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ projects.next_page_number }}">下一页</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
