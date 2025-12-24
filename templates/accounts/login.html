@@ -1,30 +1,75 @@
-{% extends "base.html" %}
+{% load static %}
 {% load crispy_forms_tags %}
 
-{% block title %}登录 - 房地产销售管理系统{% endblock %}
-
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card shadow mt-5">
-                <div class="card-body p-5">
-                    <h2 class="text-center mb-4">房地产销售管理系统</h2>
-                    <hr>
-                    {% if form.errors %}
-                    <div class="alert alert-danger">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <div>{{ error }}</div>
-                            {% endfor %}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                    {% crispy form %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 房地产销售管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+<body>
+    <!-- 背景层 -->
+    <div class="login-background"></div>
+    <div class="login-overlay"></div>
+    
+    <!-- 装饰元素 -->
+    <div class="login-decoration decoration-1"></div>
+    <div class="login-decoration decoration-2"></div>
+    
+    <!-- 登录容器 -->
+    <div class="login-container">
+        <div class="login-card">
+            <!-- 系统标题 -->
+            <div class="system-title">
+                <h1><i class="bi bi-building"></i> 房地产销售管理系统</h1>
+                <div class="system-subtitle">Real Estate Sales Management System</div>
+                <div class="system-type">Web管理系统</div>
+            </div>
+            
+            <!-- 分割线 -->
+            <div class="login-divider">
+                <span>用户登录</span>
+            </div>
+            
+            <!-- 错误消息 -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <i class="bi bi-x-circle-fill"></i>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- 登录表单 -->
+            {% crispy form %}
+            
+            <!-- 底部信息 -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-shield-check"></i> 安全登录 | 
+                    <i class="bi bi-lock"></i> 数据加密保护
+                </small>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 
