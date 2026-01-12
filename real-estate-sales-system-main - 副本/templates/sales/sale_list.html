@@ -1,0 +1,267 @@
+<!-- templates/sales/sale_list.html -->
+{% extends "base.html" %}
+
+{% block title %}销售记录列表{% endblock %}
+
+{% block content %}
+<h2>销售管理</h2>
+<hr>
+
+<div class="mb-3">
+    <a href="{% url 'sales:sale_create' %}" class="btn btn-primary">创建销售记录</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="row g-2">
+        <!-- 基本信息搜索 -->
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control" placeholder="搜索客户、项目或合同编号" value="{{ search }}">
+        </div>
+        
+        <!-- 房源位置级联选择 -->
+<div class="col-md-4">
+    <div class="row g-1">
+        <div class="col-4">
+            <select name="building" class="form-select" id="building-select">
+                <option value="">选择栋</option>
+                {% for building_num in building_list %}
+                <option value="{{ building_num }}" {% if building == building_num %}selected{% endif %}>
+                    {{ building_num }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4">
+            <select name="unit" class="form-select" id="unit-select">
+                <option value="">选择单元</option>
+                {% for unit_num in unit_list %}
+                <option value="{{ unit_num }}" {% if unit == unit_num %}selected{% endif %}>
+                    {{ unit_num }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-4">
+            <select name="room" class="form-select" id="room-select">
+                <option value="">选择室</option>
+                {% for room_num in room_list %}
+                <option value="{{ room_num }}" {% if room == room_num %}selected{% endif %}>
+                    {{ room_num }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+        <!-- 状态筛选 -->
+        <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="">所有状态</option>
+                <option value="pending" {% if status == 'pending' %}selected{% endif %}>待审核</option>
+                <option value="approved" {% if status == 'approved' %}selected{% endif %}>已批准</option>
+                <option value="completed" {% if status == 'completed' %}selected{% endif %}>已完成</option>
+                <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>已取消</option>
+            </select>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="col-md-2">
+            <div class="d-flex gap-1">
+                <button type="submit" class="btn btn-primary flex-grow-1">搜索</button>
+                <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">重置</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>客户</th>
+            <th>项目</th>
+            <th>房源位置</th>
+            <th>业务员</th>
+            <th>成交价(元)</th>
+            <th>状态</th>
+            <th>签约日期</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+  <tbody>
+    {% for sale in sales %}
+    <tr>
+        <td>{{ sale.customer.name }}</td>
+        <td>{{ sale.property.project.name }}</td>
+        <td>
+            {{ sale.property.building_number }}
+            {{ sale.property.unit_number }}
+            {{ sale.property.room_number }}室
+        </td>
+        <td>{{ sale.salesperson.username|default:"-" }}</td>
+        <td>{{ sale.sale_price|floatformat:0 }}</td>
+        <td>
+            <span class="badge bg-{% if sale.status == 'completed' %}success{% elif sale.status == 'approved' %}info{% elif sale.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                {{ sale.get_status_display }}
+            </span>
+        </td>
+        <td>{{ sale.contract_date|date:"Y-m-d"|default:"-" }}</td>
+        <td>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'sales:sale_detail' sale.pk %}" class="btn btn-info" title="详情">
+                    <i class="bi bi-eye"></i>
+                </a>
+                <a href="{% url 'sales:sale_update' sale.pk %}" class="btn btn-primary" title="编辑">
+                    <i class="bi bi-pencil"></i>
+                </a>
+                <a href="{% url 'sales:sale_delete' sale.pk %}" class="btn btn-danger" title="删除">
+                    <i class="bi bi-trash"></i>
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="8" class="text-center py-4 text-muted">
+            <i class="bi bi-receipt" style="font-size: 2rem;"></i>
+            <p class="mt-2">暂无销售记录</p>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+</table>
+
+{% if sales.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if sales.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ sales.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if building %}&building={{ building }}{% endif %}{% if unit %}&unit={{ unit }}{% endif %}{% if room %}&room={{ room }}{% endif %}">
+                上一页
+            </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">
+                第 {{ sales.number }} 页，共 {{ sales.paginator.num_pages }} 页
+            </span>
+        </li>
+
+        {% if sales.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ sales.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if building %}&building={{ building }}{% endif %}{% if unit %}&unit={{ unit }}{% endif %}{% if room %}&room={{ room }}{% endif %}">
+                下一页
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- JavaScript 实现级联选择 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 获取所有销售记录中的房源数据
+    const salesData = [
+        {% for sale in sales %}
+        {
+            building: "{{ sale.property.building_number }}",
+            unit: "{{ sale.property.unit_number }}",
+            room: "{{ sale.property.room_number }}"
+        },
+        {% endfor %}
+    ];
+
+    // 去重并排序
+    const getUniqueValues = (data, key) => {
+        const values = [...new Set(data.map(item => item[key]))];
+        // 尝试按数字排序，如果失败则按字符串排序
+        return values.sort((a, b) => {
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return numA - numB;
+            }
+            return a.localeCompare(b);
+        });
+    };
+
+    // 根据栋筛选单元和室
+    function updateUnitsAndRooms() {
+        const building = document.getElementById('building-select').value;
+        const unitSelect = document.getElementById('unit-select');
+        const roomSelect = document.getElementById('room-select');
+
+        // 重置单元和室
+        unitSelect.innerHTML = '<option value="">选择单元</option>';
+        roomSelect.innerHTML = '<option value="">选择室</option>';
+
+        if (building) {
+            // 过滤出该栋的销售记录
+            const filteredData = salesData.filter(item => item.building === building);
+
+            // 更新单元选项
+            const uniqueUnits = getUniqueValues(filteredData, 'unit');
+            uniqueUnits.forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                unitSelect.appendChild(option);
+            });
+
+            // 如果之前选择了单元，恢复选择
+            const selectedUnit = "{{ unit }}";
+            if (selectedUnit) {
+                unitSelect.value = selectedUnit;
+                updateRooms();
+            }
+        }
+    }
+
+    // 根据单元筛选室
+    function updateRooms() {
+        const building = document.getElementById('building-select').value;
+        const unit = document.getElementById('unit-select').value;
+        const roomSelect = document.getElementById('room-select');
+
+        // 重置室
+        roomSelect.innerHTML = '<option value="">选择室</option>';
+
+        if (building && unit) {
+            // 过滤出该栋该单元的销售记录
+            const filteredData = salesData.filter(item =>
+                item.building === building && item.unit === unit
+            );
+
+            // 更新室选项
+            const uniqueRooms = getUniqueValues(filteredData, 'room');
+            uniqueRooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room;
+                option.textContent = room;
+                roomSelect.appendChild(option);
+            });
+
+            // 如果之前选择了室，恢复选择
+            const selectedRoom = "{{ room }}";
+            if (selectedRoom) {
+                roomSelect.value = selectedRoom;
+            }
+        }
+    }
+
+    // 绑定事件
+    document.getElementById('building-select').addEventListener('change', function() {
+        updateUnitsAndRooms();
+    });
+
+    document.getElementById('unit-select').addEventListener('change', function() {
+        updateRooms();
+    });
+
+    // 页面加载时初始化
+    updateUnitsAndRooms();
+});
+</script>
+{% endblock %}

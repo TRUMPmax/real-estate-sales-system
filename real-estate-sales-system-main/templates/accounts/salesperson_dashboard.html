@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}业务员仪表板{% endblock %}
+
+{% block content %}
+<h2>业务员仪表板</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">我的客户数</h5>
+                <h2>{{ total_customers }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">我的销售记录</h5>
+                <h2>{{ total_sales }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h4>快速操作</h4>
+    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">创建客户</a>
+    <a href="{% url 'sales:sale_create' %}" class="btn btn-success">创建销售记录</a>
+    <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">客户列表</a>
+    <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">销售列表</a>
+</div>
+{% endblock %}
+

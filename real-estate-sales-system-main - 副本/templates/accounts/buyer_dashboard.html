@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}购房者仪表板{% endblock %}
+
+{% block content %}
+<h2>购房者仪表板</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-12">
+        <h4>可售房源</h4>
+        <div class="row">
+            {% for property in properties %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ property.project.name }}</h5>
+                        <p class="card-text">
+                            <strong>位置:</strong> {{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}<br>
+                            <strong>面积:</strong> {{ property.building_area }}㎡<br>
+                            <strong>总价:</strong> ¥{{ property.total_price|floatformat:0 }}
+                        </p>
+                        <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-primary btn-sm">查看详情</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>暂无可售房源</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'properties:property_list' %}" class="btn btn-primary">查看所有房源</a>
+    <a href="{% url 'customers:customer_register' %}" class="btn btn-success">登记信息</a>
+</div>
+{% endblock %}
+

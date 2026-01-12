@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}房地产销售管理系统{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    {% load static %}
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #343a40;
+        }
+        .sidebar .nav-link {
+            color: #fff;
+        }
+        .sidebar .nav-link:hover {
+            background-color: #495057;
+        }
+        .sidebar .nav-link.active {
+            background-color: #007bff;
+        }
+        .main-content {
+            padding: 20px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white">房地产销售系统</h4>
+                    <hr class="text-white">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:dashboard' %}">
+                                <i class="bi bi-house-door"></i> 仪表板
+                            </a>
+                        </li>
+                        {% if user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'accounts:user_list' %}">
+                                <i class="bi bi-people"></i> 用户管理
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_manager or user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'projects:project_list' %}">
+                                <i class="bi bi-building"></i> 项目管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'properties:property_list' %}">
+                                <i class="bi bi-house"></i> 房源管理
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_salesperson or user.is_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'customers:customer_list' %}">
+                                <i class="bi bi-person"></i> 客户管理
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'sales:sale_list' %}">
+                                <i class="bi bi-cart"></i> 销售管理
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if user.is_buyer %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'properties:property_list' %}">
+                                <i class="bi bi-search"></i> 房源查询
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'customers:customer_register' %}">
+                                <i class="bi bi-person-plus"></i> 登记信息
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    <hr class="text-white">
+                    <div class="text-white">
+                        <p class="mb-1">当前用户: {{ user.username }}</p>
+                        <p class="mb-1">角色: {{ user.get_role_display }}</p>
+                        <a href="{% url 'accounts:logout' %}" class="btn btn-outline-light btn-sm w-100 mt-2">
+                            <i class="bi bi-box-arrow-right"></i> 退出登录
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            <main class="col-md-10 main-content">
+    {% endif %}
+    
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    {% block content %}{% endblock %}
+    
+    {% if user.is_authenticated %}
+            </main>
+        </div>
+    </div>
+    {% endif %}
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

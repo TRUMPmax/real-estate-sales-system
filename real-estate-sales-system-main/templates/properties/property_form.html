@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<hr>
+
+<form id="propertyForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- 项目选择 -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            {{ form.project|as_crispy_field }}
+        </div>
+        <div class="col-md-6">
+            {{ form.status|as_crispy_field }}
+        </div>
+    </div>
+
+    <!-- 级联选择：楼栋→单元→楼层→房号 -->
+    <div class="row mb-3">
+        <!-- 楼栋号选择 -->
+        <div class="col-md-3">
+            <label for="building_display" class="form-label">楼栋号 <span class="text-danger">*</span></label>
+            <select id="building_display" class="form-select" required disabled>
+                <option value="">请先选择项目</option>
+            </select>
+            {{ form.building_number }}
+            {% if form.building_number.errors %}
+                <div class="text-danger small mt-1">{{ form.building_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 单元号选择 -->
+        <div class="col-md-3">
+            <label for="unit_display" class="form-label">单元号 <span class="text-danger">*</span></label>
+            <select id="unit_display" class="form-select" required disabled>
+                <option value="">请先选择楼栋</option>
+            </select>
+            {{ form.unit_number }}
+            {% if form.unit_number.errors %}
+                <div class="text-danger small mt-1">{{ form.unit_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 楼层选择 -->
+        <div class="col-md-3">
+            <label for="floor_display" class="form-label">楼层 <span class="text-danger">*</span></label>
+            <select id="floor_display" class="form-select" required disabled>
+                <option value="">请先选择单元</option>
+            </select>
+            {{ form.floor }}
+            {% if form.floor.errors %}
+                <div class="text-danger small mt-1">{{ form.floor.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 房号选择 -->
+        <div class="col-md-3">
+            <label for="room_display" class="form-label">房号 <span class="text-danger">*</span></label>
+            <select id="room_display" class="form-select" required disabled>
+                <option value="">请先选择楼层</option>
+            </select>
+            {{ form.room_number }}
+            {% if form.room_number.errors %}
+                <div class="text-danger small mt-1">{{ form.room_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 其他字段 -->
+    <div class="row mb-3">
+        <div class="col-md-4">{{ form.building_area|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.interior_area|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.shared_area|as_crispy_field }}</div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">{{ form.unit_price|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.total_price|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.location_description|as_crispy_field }}</div>
+    </div>
+
+    <!-- 提交按钮 -->
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{% url 'properties:property_list' %}" class="btn btn-secondary ms-2">取消</a>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectSelect = document.getElementById('id_project');
+    const buildingDisplay = document.getElementById('building_display');
+    const unitDisplay = document.getElementById('unit_display');
+    const floorDisplay = document.getElementById('floor_display');
+    const roomDisplay = document.getElementById('room_display');
+
+    // 隐藏字段
+    const buildingHidden = document.querySelector('[name="building_number"]');
+    const unitHidden = document.querySelector('[name="unit_number"]');
+    const floorHidden = document.querySelector('[name="floor"]');
+    const roomHidden = document.querySelector('[name="room_number"]');
+
+    // API端点URL
+    const buildingsUrl = "{% url 'properties:get_building_options' %}";
+    const unitsUrl = "{% url 'properties:get_unit_options' %}";
+    const floorsUrl = "{% url 'properties:get_floor_options' %}";
+    const roomsUrl = "{% url 'properties:get_room_options' %}";
+
+    // 辅助函数：清空并禁用选择框
+    function clearSelect(selectElement, placeholder, disabled = true) {
+        selectElement.innerHTML = '';
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder;
+        selectElement.appendChild(placeholderOption);
+        selectElement.disabled = disabled;
+        selectElement.required = !disabled;
+    }
+
+    // 1. 项目选择变化时，获取楼栋选项
+    projectSelect.addEventListener('change', function() {
+        const projectId = this.value;
+
+        clearSelect(buildingDisplay, '请选择楼栋', true);
+        clearSelect(unitDisplay, '请先选择楼栋', true);
+        clearSelect(floorDisplay, '请先选择单元', true);
+        clearSelect(roomDisplay, '请先选择楼层', true);
+
+        // 清空隐藏字段
+        buildingHidden.value = '';
+        unitHidden.value = '';
+        floorHidden.value = '';
+        roomHidden.value = '';
+
+        if (projectId) {
+            // 显示加载状态
+            buildingDisplay.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${buildingsUrl}?project_id=${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.buildings) {
+                        buildingDisplay.innerHTML = '<option value="">请选择楼栋</option>';
+                        data.buildings.forEach(building => {
+                            const option = document.createElement('option');
+                            option.value = building.value;
+                            option.textContent = building.text;
+                            buildingDisplay.appendChild(option);
+                        });
+                        buildingDisplay.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取楼栋失败:', error);
+                    clearSelect(buildingDisplay, '加载失败，请重试', true);
+                });
+        }
+    });
+
+    // 2. 楼栋选择变化时，获取单元选项
+    buildingDisplay.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = this.value;
+
+        buildingHidden.value = this.value;  // 设置隐藏字段
+
+        clearSelect(unitDisplay, '请选择单元', true);
+        clearSelect(floorDisplay, '请先选择单元', true);
+        clearSelect(roomDisplay, '请先选择楼层', true);
+
+        // 清空下级隐藏字段
+        unitHidden.value = '';
+        floorHidden.value = '';
+        roomHidden.value = '';
+
+        if (projectId && buildingNumber) {
+            // 显示加载状态
+            unitDisplay.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${unitsUrl}?project_id=${projectId}&building_number=${buildingNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.units) {
+                        unitDisplay.innerHTML = '<option value="">请选择单元</option>';
+                        data.units.forEach(unit => {
+                            const option = document.createElement('option');
+                            option.value = unit.value;
+                            option.textContent = unit.text;
+                            unitDisplay.appendChild(option);
+                        });
+                        unitDisplay.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取单元失败:', error);
+                    clearSelect(unitDisplay, '加载失败，请重试', true);
+                });
+        }
+    });
+
+    // 3. 单元选择变化时，获取楼层选项
+    unitDisplay.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = buildingDisplay.value;
+        const unitNumber = this.value;
+
+        unitHidden.value = this.value;  // 设置隐藏字段
+
+        clearSelect(floorDisplay, '请选择楼层', true);
+        clearSelect(roomDisplay, '请先选择楼层', true);
+
+        // 清空下级隐藏字段
+        floorHidden.value = '';
+        roomHidden.value = '';
+
+        if (projectId && buildingNumber && unitNumber) {
+            // 显示加载状态
+            floorDisplay.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${floorsUrl}?project_id=${projectId}&building_number=${buildingNumber}&unit_number=${unitNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.floors) {
+                        floorDisplay.innerHTML = '<option value="">请选择楼层</option>';
+                        data.floors.forEach(floor => {
+                            const option = document.createElement('option');
+                            option.value = floor.value;
+                            option.textContent = floor.text;
+                            floorDisplay.appendChild(option);
+                        });
+                        floorDisplay.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取楼层失败:', error);
+                    clearSelect(floorDisplay, '加载失败，请重试', true);
+                });
+        }
+    });
+
+    // 4. 楼层选择变化时，获取房号选项
+    floorDisplay.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = buildingDisplay.value;
+        const unitNumber = unitDisplay.value;
+        const floor = this.value;
+
+        floorHidden.value = this.value;  // 设置隐藏字段
+
+        clearSelect(roomDisplay, '请选择房号', true);
+        roomHidden.value = '';
+
+        if (projectId && buildingNumber && unitNumber && floor) {
+            // 显示加载状态
+            roomDisplay.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${roomsUrl}?project_id=${projectId}&building_number=${buildingNumber}&unit_number=${unitNumber}&floor=${floor}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.rooms) {
+                        roomDisplay.innerHTML = '<option value="">请选择房号</option>';
+                        data.rooms.forEach(room => {
+                            const option = document.createElement('option');
+                            option.value = room.value;
+                            option.textContent = room.text;
+                            roomDisplay.appendChild(option);
+                        });
+                        roomDisplay.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('获取房号失败:', error);
+                    clearSelect(roomDisplay, '加载失败，请重试', true);
+                });
+        }
+    });
+
+    // 5. 房号选择变化时，更新隐藏字段
+    roomDisplay.addEventListener('change', function() {
+        roomHidden.value = this.value;
+    });
+
+    // 6. 表单提交前验证
+    document.getElementById('propertyForm').addEventListener('submit', function(e) {
+        console.log('提交前验证:', {
+            building: buildingHidden.value,
+            unit: unitHidden.value,
+            floor: floorHidden.value,
+            room: roomHidden.value
+        });
+
+        // 检查所有级联字段是否已选择
+        if (!buildingHidden.value || buildingHidden.value === '') {
+            e.preventDefault();
+            alert('请选择楼栋号');
+            buildingDisplay.focus();
+            return false;
+        }
+        if (!unitHidden.value || unitHidden.value === '') {
+            e.preventDefault();
+            alert('请选择单元号');
+            unitDisplay.focus();
+            return false;
+        }
+        if (!floorHidden.value || floorHidden.value === '') {
+            e.preventDefault();
+            alert('请选择楼层');
+            floorDisplay.focus();
+            return false;
+        }
+        if (!roomHidden.value || roomHidden.value === '') {
+            e.preventDefault();
+            alert('请选择房号');
+            roomDisplay.focus();
+            return false;
+        }
+    });
+
+    // 7. 编辑页面：初始化已选值
+    {% if form.instance.pk and form.instance.project %}
+    const initialProjectId = "{{ form.instance.project.id }}";
+    if (initialProjectId) {
+        projectSelect.value = initialProjectId;
+
+        // 设置隐藏字段的初始值
+        buildingHidden.value = "{{ form.instance.building_number|default:'' }}";
+        unitHidden.value = "{{ form.instance.unit_number|default:'' }}";
+        floorHidden.value = "{{ form.instance.floor|default:'' }}";
+        roomHidden.value = "{{ form.instance.room_number|default:'' }}";
+
+        // 延迟触发change事件
+        setTimeout(() => {
+            projectSelect.dispatchEvent(new Event('change'));
+
+            // 等待楼栋选项加载
+            setTimeout(() => {
+                if (buildingHidden.value) {
+                    buildingDisplay.value = buildingHidden.value;
+                    buildingDisplay.dispatchEvent(new Event('change'));
+
+                    // 等待单元选项加载
+                    setTimeout(() => {
+                        if (unitHidden.value) {
+                            unitDisplay.value = unitHidden.value;
+                            unitDisplay.dispatchEvent(new Event('change'));
+
+                            // 等待楼层选项加载
+                            setTimeout(() => {
+                                if (floorHidden.value) {
+                                    floorDisplay.value = floorHidden.value;
+                                    floorDisplay.dispatchEvent(new Event('change'));
+
+                                    // 等待房号选项加载
+                                    setTimeout(() => {
+                                        if (roomHidden.value) {
+                                            roomDisplay.value = roomHidden.value;
+                                        }
+                                    }, 300);
+                                }
+                            }, 300);
+                        }
+                    }, 300);
+                }
+            }, 300);
+        }, 100);
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}上传图片 - {{ property }}{% endblock %}
+
+{% block content %}
+<h2>上传房源图片</h2>
+<hr>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h5>房源信息</h5>
+        <p><strong>{{ property }}</strong></p>
+        <p>{{ property.project.name }} - {{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</p>
+    </div>
+</div>
+
+{% crispy form %}
+
+<div class="mt-3">
+    <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-secondary">返回详情</a>
+</div>
+{% endblock %}
+

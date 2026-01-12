@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}管理员仪表板{% endblock %}
+
+{% block content %}
+<h2>管理员仪表板</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">总用户数</h5>
+                <h2>{{ total_users }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <h4>快速操作</h4>
+    <a href="{% url 'accounts:user_create' %}" class="btn btn-primary">创建用户</a>
+    <a href="{% url 'accounts:user_list' %}" class="btn btn-secondary">用户列表</a>
+</div>
+{% endblock %}
+

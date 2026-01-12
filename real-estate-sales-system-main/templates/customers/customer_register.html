@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}购房者登记{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>购房者信息登记</h2>
+            <hr>
+            <div class="alert alert-info">
+                <p>请填写您的真实信息，我们会尽快与您联系。</p>
+            </div>
+            {% crispy form %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+

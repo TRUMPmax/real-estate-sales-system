@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}更新价格{% endblock %}
+
+{% block content %}
+<h2>更新价格 - {{ property }}</h2>
+<hr>
+
+<div class="alert alert-info">
+    <p><strong>当前价格:</strong></p>
+    <p>单价: ¥{{ property.unit_price|floatformat:0 }}/㎡</p>
+    <p>总价: ¥{{ property.total_price|floatformat:0 }}</p>
+</div>
+
+{% crispy form %}
+{% endblock %}
+

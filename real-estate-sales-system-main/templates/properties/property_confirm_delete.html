@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}删除房源{% endblock %}
+
+{% block content %}
+<h2>确认删除房源</h2>
+<hr>
+
+<p>您确定要删除房源 <strong>{{ property }}</strong> 吗？</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">确认删除</button>
+    <a href="{% url 'properties:property_list' %}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+

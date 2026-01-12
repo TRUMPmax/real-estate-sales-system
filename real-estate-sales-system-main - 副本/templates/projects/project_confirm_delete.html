@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}删除项目{% endblock %}
+
+{% block content %}
+<h2>确认删除项目</h2>
+<hr>
+
+<p>您确定要删除项目 <strong>{{ project.name }}</strong> 吗？</p>
+<p class="text-danger">注意：删除项目将同时删除该项目下的所有房源！</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">确认删除</button>
+    <a href="{% url 'projects:project_list' %}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+

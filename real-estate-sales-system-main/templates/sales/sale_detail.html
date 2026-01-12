@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}销售记录详情{% endblock %}
+
+{% block content %}
+<h2>销售记录详情</h2>
+<hr>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>客户信息</h4>
+                <p><strong>姓名:</strong> {{ sale.customer.name }}</p>
+                <p><strong>电话:</strong> {{ sale.customer.phone }}</p>
+                <p><strong>邮箱:</strong> {{ sale.customer.email|default:"未填写" }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h4>房源信息</h4>
+                <p><strong>项目:</strong> {{ sale.property.project.name }}</p>
+                <p><strong>位置:</strong> {{ sale.property.building_number }}-{{ sale.property.unit_number }}-{{ sale.property.room_number }}</p>
+                <p><strong>面积:</strong> {{ sale.property.building_area }}㎡</p>
+                <p><strong>原价:</strong> ¥{{ sale.property.total_price|floatformat:0 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h4>销售信息</h4>
+        <p><strong>业务员:</strong> {{ sale.salesperson.username|default:"未分配" }}</p>
+        <p><strong>成交价:</strong> ¥{{ sale.sale_price|floatformat:0 }}</p>
+        <p><strong>首付款:</strong> ¥{{ sale.down_payment|floatformat:0 }}</p>
+        <p><strong>付款方式:</strong> {{ sale.payment_method|default:"未填写" }}</p>
+        <p><strong>合同编号:</strong> {{ sale.contract_number|default:"未填写" }}</p>
+        <p><strong>签约日期:</strong> {{ sale.contract_date|date:"Y-m-d"|default:"未填写" }}</p>
+        <p><strong>状态:</strong> 
+            <span class="badge bg-{% if sale.status == 'completed' %}success{% elif sale.status == 'approved' %}info{% elif sale.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                {{ sale.get_status_display }}
+            </span>
+        </p>
+        {% if sale.notes %}
+        <p><strong>备注:</strong> {{ sale.notes }}</p>
+        {% endif %}
+        <p><strong>创建时间:</strong> {{ sale.created_at|date:"Y-m-d H:i" }}</p>
+    </div>
+</div>
+
+<div class="mb-3">
+    <a href="{% url 'sales:sale_update' sale.pk %}" class="btn btn-primary">编辑</a>
+    <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">返回列表</a>
+</div>
+{% endblock %}
+

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}删除图片{% endblock %}
+
+{% block content %}
+<h2>确认删除图片</h2>
+<hr>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <p>您确定要删除这张图片吗？</p>
+        <img src="{{ image.image.url }}" class="img-fluid" alt="{{ image.description|default:property }}" style="max-height: 300px;">
+        {% if image.description %}
+        <p class="mt-2"><strong>描述:</strong> {{ image.description }}</p>
+        {% endif %}
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">确认删除</button>
+    <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-secondary">取消</a>
+</form>
+{% endblock %}
+

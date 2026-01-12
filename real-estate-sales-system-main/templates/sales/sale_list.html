@@ -1,0 +1,430 @@
+<!-- templates/sales/sale_list.html -->
+{% extends "base.html" %}
+
+{% block title %}销售记录列表{% endblock %}
+
+{% block content %}
+<h2>销售管理</h2>
+<hr>
+
+<div class="mb-3">
+    <a href="{% url 'sales:sale_create' %}" class="btn btn-primary">创建销售记录</a>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="row g-3">
+        <!-- 通用搜索框 -->
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control"
+                   placeholder="搜索客户或合同编号" value="{{ search }}">
+        </div>
+
+        <!-- 完整级联搜索：项目→栋数→单元数→层数→房间号 -->
+        <div class="col-md-7">
+            <div class="row g-1">
+                <!-- 项目选择 -->
+                <div class="col-md-3">
+                    <select name="project" class="form-select" id="project-select">
+                        <option value="">选择项目</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}"
+                                data-buildings="{{ project.total_buildings }}"
+                                data-units="{{ project.units_per_building }}"
+                                data-floors="{{ project.floors_per_unit }}"
+                                data-rooms="{{ project.rooms_per_floor }}"
+                                {% if selected_project == project.id|stringformat:"s" %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 栋数选择 -->
+                <div class="col-md-2">
+                    <select name="building" class="form-select" id="building-select" disabled>
+                        <option value="">选择栋</option>
+                        <!-- 如果是编辑页面，显示已选项目的栋数选项 -->
+                        {% if current_project %}
+                            {% for i in "x"|ljust:current_project.total_buildings %}
+                                <option value="{{ forloop.counter }}"
+                                        {% if building == forloop.counter|stringformat:"s" %}selected{% endif %}>
+                                    {{ forloop.counter }}栋
+                                </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- 单元数选择 -->
+                <div class="col-md-2">
+                    <select name="unit" class="form-select" id="unit-select" disabled>
+                        <option value="">选择单元</option>
+                        <!-- 如果是编辑页面，显示已选项目的单元数选项 -->
+                        {% if current_project and building %}
+                            {% for i in "x"|ljust:current_project.units_per_building %}
+                                <option value="{{ forloop.counter }}"
+                                        {% if unit == forloop.counter|stringformat:"s" %}selected{% endif %}>
+                                    {{ forloop.counter }}单元
+                                </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- 层数选择 -->
+                <div class="col-md-2">
+                    <select name="floor" class="form-select" id="floor-select" disabled>
+                        <option value="">选择层</option>
+                        <!-- 如果是编辑页面，显示已选项目的层数选项 -->
+                        {% if current_project and building and unit %}
+                            {% for i in "x"|ljust:current_project.floors_per_unit %}
+                                <option value="{{ forloop.counter }}"
+                                        {% if floor == forloop.counter|stringformat:"s" %}selected{% endif %}>
+                                    {{ forloop.counter }}层
+                                </option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+
+                <!-- 房间号选择 -->
+                <div class="col-md-3">
+                    <select name="room" class="form-select" id="room-select" disabled>
+                        <option value="">选择房号</option>
+                        <!-- 如果是编辑页面，显示已选项目的房号选项 -->
+                        {% if current_project and building and unit and floor %}
+                            {% with floor_int=floor|add:0 %}
+                                {% for i in "x"|ljust:current_project.rooms_per_floor %}
+                                    {% with room_number=floor_int|stringformat:"d"|add:i|stringformat:"02d" %}
+                                        <option value="{{ room_number }}"
+                                                {% if room == room_number %}selected{% endif %}>
+                                            {{ room_number }}室
+                                        </option>
+                                    {% endwith %}
+                                {% endfor %}
+                            {% endwith %}
+                        {% endif %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态筛选 -->
+        <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="">所有状态</option>
+                <option value="pending" {% if status == 'pending' %}selected{% endif %}>待审核</option>
+                <option value="approved" {% if status == 'approved' %}selected{% endif %}>已批准</option>
+                <option value="completed" {% if status == 'completed' %}selected{% endif %}>已完成</option>
+                <option value="cancelled" {% if status == 'cancelled' %}selected{% endif %}>已取消</option>
+            </select>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="col-md-2">
+            <div class="d-flex gap-1">
+                <button type="submit" class="btn btn-primary flex-grow-1">搜索</button>
+                <a href="{% url 'sales:sale_list' %}" class="btn btn-secondary">重置</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- 销售记录表格 -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>客户</th>
+            <th>项目</th>
+            <th>房源位置</th>
+            <th>业务员</th>
+            <th>成交价(元)</th>
+            <th>状态</th>
+            <th>签约日期</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale.customer.name }}</td>
+            <td>{{ sale.property.project.name }}</td>
+            <td>
+                {{ sale.property.building_number }}
+                {{ sale.property.unit_number }}
+                {{ sale.property.floor }}层
+                {{ sale.property.room_number }}
+            </td>
+            <td>{{ sale.salesperson.username|default:"-" }}</td>
+            <td>{{ sale.sale_price|floatformat:0 }}</td>
+            <td>
+                <span class="badge bg-{% if sale.status == 'completed' %}success{% elif sale.status == 'approved' %}info{% elif sale.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                    {{ sale.get_status_display }}
+                </span>
+            </td>
+            <td>{{ sale.contract_date|date:"Y-m-d"|default:"-" }}</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <a href="{% url 'sales:sale_detail' sale.pk %}" class="btn btn-info" title="详情">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{% url 'sales:sale_update' sale.pk %}" class="btn btn-primary" title="编辑">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{% url 'sales:sale_delete' sale.pk %}" class="btn btn-danger" title="删除">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center py-4 text-muted">
+                <i class="bi bi-receipt" style="font-size: 2rem;"></i>
+                <p class="mt-2">暂无销售记录</p>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 分页 -->
+{% if sales.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if sales.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ sales.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_project %}&project={{ selected_project }}{% endif %}{% if building %}&building={{ building }}{% endif %}{% if unit %}&unit={{ unit }}{% endif %}{% if floor %}&floor={{ floor }}{% endif %}{% if room %}&room={{ room }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                上一页
+            </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">
+                第 {{ sales.number }} 页，共 {{ sales.paginator.num_pages }} 页
+            </span>
+        </li>
+
+        {% if sales.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ sales.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_project %}&project={{ selected_project }}{% endif %}{% if building %}&building={{ building }}{% endif %}{% if unit %}&unit={{ unit }}{% endif %}{% if floor %}&floor={{ floor }}{% endif %}{% if room %}&room={{ room }}{% endif %}{% if status %}&status={{ status }}{% endif %}">
+                下一页
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- JavaScript 实现动态级联 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectSelect = document.getElementById('project-select');
+    const buildingSelect = document.getElementById('building-select');
+    const unitSelect = document.getElementById('unit-select');
+    const floorSelect = document.getElementById('floor-select');
+    const roomSelect = document.getElementById('room-select');
+
+    // 从URL获取已选中的值
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedProject = urlParams.get('project') || '';
+    const selectedBuilding = urlParams.get('building') || '';
+    const selectedUnit = urlParams.get('unit') || '';
+    const selectedFloor = urlParams.get('floor') || '';
+    const selectedRoom = urlParams.get('room') || '';
+
+    // 修改辅助函数：生成数字序列选项
+    function generateNumberOptions(start, end, suffix = '') {
+        const options = [];
+        for (let i = start; i <= end; i++) {
+            options.push({
+                value: i + suffix,  // 值带单位，如"1栋"
+                text: i + suffix    // 显示带单位
+            });
+        }
+        return options;
+    }
+
+    // 辅助函数：更新选择框
+    function updateSelect(selectElement, options, disabled = false) {
+        selectElement.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = disabled ? '请先选择上级' : '请选择';
+        selectElement.appendChild(placeholder);
+
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.text;
+
+            // 如果是当前选中的值，设置为选中
+            const currentValue = getCurrentValue(selectElement.id);
+            if (option.value.toString() === currentValue) {
+                opt.selected = true;
+            }
+
+            selectElement.appendChild(opt);
+        });
+
+        selectElement.disabled = disabled;
+    }
+
+    // 辅助函数：获取当前选中值
+    function getCurrentValue(selectId) {
+        switch(selectId) {
+            case 'building-select': return selectedBuilding;
+            case 'unit-select': return selectedUnit;
+            case 'floor-select': return selectedFloor;
+            case 'room-select': return selectedRoom;
+            default: return '';
+        }
+    }
+
+    // 清空下级选择框
+    function clearChildSelects(startFrom) {
+        const selects = [buildingSelect, unitSelect, floorSelect, roomSelect];
+        const startIndex = selects.indexOf(startFrom);
+
+        for (let i = startIndex; i < selects.length; i++) {
+            const placeholder = selects[i].id.includes('building') ? '选择栋' :
+                               selects[i].id.includes('unit') ? '选择单元' :
+                               selects[i].id.includes('floor') ? '选择层' : '选择房号';
+            selects[i].innerHTML = `<option value="">${placeholder}</option>`;
+            selects[i].disabled = true;
+        }
+    }
+
+    // 1. 项目选择变化时，更新楼栋选项
+    projectSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const totalBuildings = parseInt(selectedOption.dataset.buildings) || 0;
+
+        // 清空所有下级选择框
+        clearChildSelects(buildingSelect);
+
+        if (totalBuildings > 0) {
+            // 生成楼栋选项
+            const buildingOptions = generateNumberOptions(1, totalBuildings, '栋');
+            updateSelect(buildingSelect, buildingOptions, false);
+
+            // 如果有URL中的楼栋参数，触发change事件
+            if (selectedBuilding) {
+                setTimeout(() => {
+                    buildingSelect.value = selectedBuilding;
+                    buildingSelect.dispatchEvent(new Event('change'));
+                }, 50);
+            }
+        }
+    });
+
+    // 2. 楼栋选择变化时，更新单元选项
+    buildingSelect.addEventListener('change', function() {
+        const projectOption = projectSelect.options[projectSelect.selectedIndex];
+        const unitsPerBuilding = parseInt(projectOption.dataset.units) || 0;
+
+        // 清空单元以下的选择框
+        clearChildSelects(unitSelect);
+
+        if (unitsPerBuilding > 0 && this.value) {
+            // 生成单元选项
+            const unitOptions = generateNumberOptions(1, unitsPerBuilding, '单元');
+            updateSelect(unitSelect, unitOptions, false);
+
+            // 如果有URL中的单元参数，触发change事件
+            if (selectedUnit) {
+                setTimeout(() => {
+                    unitSelect.value = selectedUnit;
+                    unitSelect.dispatchEvent(new Event('change'));
+                }, 50);
+            }
+        }
+    });
+
+    // 3. 单元选择变化时，更新楼层选项
+    unitSelect.addEventListener('change', function() {
+        const projectOption = projectSelect.options[projectSelect.selectedIndex];
+        const floorsPerUnit = parseInt(projectOption.dataset.floors) || 0;
+
+        // 清空楼层以下的选择框
+        clearChildSelects(floorSelect);
+
+        if (floorsPerUnit > 0 && this.value) {
+            // 生成楼层选项
+            const floorOptions = generateNumberOptions(1, floorsPerUnit, '层');
+            updateSelect(floorSelect, floorOptions, false);
+
+            // 如果有URL中的楼层参数，触发change事件
+            if (selectedFloor) {
+                setTimeout(() => {
+                    floorSelect.value = selectedFloor;
+                    floorSelect.dispatchEvent(new Event('change'));
+                }, 50);
+            }
+        }
+    });
+
+    // 4. 楼层选择变化时，更新房号选项
+    floorSelect.addEventListener('change', function() {
+        const projectOption = projectSelect.options[projectSelect.selectedIndex];
+        const roomsPerFloor = parseInt(projectOption.dataset.rooms) || 0;
+
+        // 清空房号选择框
+        clearChildSelects(roomSelect);
+
+        if (roomsPerFloor > 0 && this.value) {
+            const floorNum = parseInt(this.value);
+            // 生成房号选项（格式：楼层+两位序号，如101、102）
+            const roomOptions = [];
+            for (let i = 1; i <= roomsPerFloor; i++) {
+                const roomNumber = floorNum.toString() + i.toString().padStart(2, '0');
+                roomOptions.push({
+                    value: roomNumber,
+                    text: roomNumber + '室'
+                });
+            }
+            updateSelect(roomSelect, roomOptions, false);
+        }
+    });
+
+    // 5. 页面加载时，如果URL中有项目参数，初始化级联
+    if (selectedProject) {
+        projectSelect.value = selectedProject;
+
+        // 延迟触发change事件，确保选项加载
+        setTimeout(() => {
+            projectSelect.dispatchEvent(new Event('change'));
+
+            // 如果有URL中的楼栋参数，等待选项加载后设置
+            if (selectedBuilding) {
+                setTimeout(() => {
+                    buildingSelect.value = selectedBuilding;
+                    buildingSelect.dispatchEvent(new Event('change'));
+
+                    if (selectedUnit) {
+                        setTimeout(() => {
+                            unitSelect.value = selectedUnit;
+                            unitSelect.dispatchEvent(new Event('change'));
+
+                            if (selectedFloor) {
+                                setTimeout(() => {
+                                    floorSelect.value = selectedFloor;
+                                    floorSelect.dispatchEvent(new Event('change'));
+
+                                    if (selectedRoom) {
+                                        setTimeout(() => {
+                                            roomSelect.value = selectedRoom;
+                                        }, 50);
+                                    }
+                                }, 50);
+                            }
+                        }, 50);
+                    }
+                }, 50);
+            }
+        }, 50);
+    }
+});
+</script>
+{% endblock %}

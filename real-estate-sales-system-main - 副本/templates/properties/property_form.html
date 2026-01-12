@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h2>{{ title }}</h2>
+<hr>
+
+<!-- 级联选择表单（保留Django crispy样式，调整级联顺序） -->
+<form id="propertyForm" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- 原有表单字段（项目、状态） -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            {{ form.project|as_crispy_field }}
+        </div>
+        <div class="col-md-6">
+            {{ form.status|as_crispy_field }}
+        </div>
+    </div>
+
+    <!-- 级联选择：楼栋号→单元号→楼层→房间号（自定义，扩充数据） -->
+    <div class="row mb-3">
+        <!-- 1. 楼栋号选择 -->
+        <div class="col-md-3">
+            <label for="building_number" class="form-label">楼栋号 <span class="text-danger">*</span></label>
+            <select id="building_number" name="building_number" class="form-select" required>
+                <option value="">请选择楼栋</option>
+                <option value="1栋" {% if form.building_number.value == '1栋' %}selected{% endif %}>1栋</option>
+                <option value="2栋" {% if form.building_number.value == '2栋' %}selected{% endif %}>2栋</option>
+                <option value="3栋" {% if form.building_number.value == '3栋' %}selected{% endif %}>3栋</option>
+                <option value="4栋" {% if form.building_number.value == '4栋' %}selected{% endif %}>4栋</option>
+                <option value="5栋" {% if form.building_number.value == '5栋' %}selected{% endif %}>5栋</option>
+            </select>
+            {% if form.building_number.errors %}
+                <div class="text-danger mt-1">{{ form.building_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 2. 单元号选择（级联楼栋） -->
+        <div class="col-md-3">
+            <label for="unit_number" class="form-label">单元号 <span class="text-danger">*</span></label>
+            <select id="unit_number" name="unit_number" class="form-select" required disabled>
+                <option value="">请先选择楼栋</option>
+            </select>
+            {% if form.unit_number.errors %}
+                <div class="text-danger mt-1">{{ form.unit_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 3. 楼层选择（级联单元，优先选择） -->
+        <div class="col-md-3">
+            <label for="floor" class="form-label">楼层 <span class="text-danger">*</span></label>
+            <select id="floor" name="floor" class="form-select" required disabled>
+                <option value="">请先选择单元</option>
+            </select>
+            {% if form.floor.errors %}
+                <div class="text-danger mt-1">{{ form.floor.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 4. 房号选择（级联楼层） -->
+        <div class="col-md-3">
+            <label for="room_number" class="form-label">房号 <span class="text-danger">*</span></label>
+            <select id="room_number" name="room_number" class="form-select" required disabled>
+                <option value="">请先选择楼层</option>
+            </select>
+            {% if form.room_number.errors %}
+                <div class="text-danger mt-1">{{ form.room_number.errors.0 }}</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 其他原有表单字段（面积、价格等） -->
+    <div class="row mb-3">
+        <div class="col-md-4">{{ form.building_area|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.interior_area|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.shared_area|as_crispy_field }}</div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-4">{{ form.unit_price|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.total_price|as_crispy_field }}</div>
+        <div class="col-md-4">{{ form.location_description|as_crispy_field }}</div>
+    </div>
+
+    <!-- 提交按钮 -->
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary">保存</button>
+        <a href="{% url 'properties:property_list' %}" class="btn btn-secondary ms-2">取消</a>
+    </div>
+</form>
+
+<!-- 前端级联+验证逻辑（扩充数据+调整级联顺序） -->
+<script>
+// 静态级联数据（扩充：5栋楼+多单元+1-30层+多房号，映射关系：楼栋→单元→楼层→房号）
+const buildingUnitFloorRoomData = {
+    "1栋": {
+        "1单元": {
+            "1": ["101", "102", "103", "104"],
+            "2": ["201", "202", "203", "204"],
+            "3": ["301", "302", "303", "304"],
+            "4": ["401", "402", "403", "404"],
+            "5": ["501", "502", "503", "504"],
+            "6": ["601", "602", "603", "604"],
+            "7": ["701", "702", "703", "704"],
+            "8": ["801", "802", "803", "804"]
+        },
+        "2单元": {
+            "1": ["101", "102", "103"],
+            "2": ["201", "202", "203"],
+            "3": ["301", "302", "303"],
+            "4": ["401", "402", "403"],
+            "5": ["501", "502", "503"],
+            "6": ["601", "602", "603"],
+            "7": ["701", "702", "703"],
+            "8": ["801", "802", "803"]
+        }
+    },
+    "2栋": {
+        "1单元": {
+            "1": ["101", "102"],
+            "2": ["201", "202"],
+            "3": ["301", "302"],
+            "4": ["401", "402"],
+            "5": ["501", "502"],
+            "6": ["601", "602"],
+            "7": ["701", "702"],
+            "8": ["801", "802"],
+            "9": ["901", "902"],
+            "10": ["1001", "1002"]
+        },
+        "2单元": {
+            "1": ["101", "102"],
+            "2": ["201", "202"],
+            "3": ["301", "302"],
+            "4": ["401", "402"],
+            "5": ["501", "502"],
+            "6": ["601", "602"],
+            "7": ["701", "702"],
+            "8": ["801", "802"],
+            "9": ["901", "902"],
+            "10": ["1001", "1002"]
+        },
+        "3单元": {
+            "1": ["101", "102"],
+            "2": ["201", "202"],
+            "3": ["301", "302"],
+            "4": ["401", "402"],
+            "5": ["501", "502"],
+            "6": ["601", "602"],
+            "7": ["701", "702"],
+            "8": ["801", "802"],
+            "9": ["901", "902"],
+            "10": ["1001", "1002"]
+        }
+    },
+    "3栋": {
+        "1单元": {
+            "1": ["101", "102", "103", "104", "105"],
+            "2": ["201", "202", "203", "204", "205"],
+            "3": ["301", "302", "303", "304", "305"],
+            "4": ["401", "402", "403", "404", "405"],
+            "5": ["501", "502", "503", "504", "505"]
+        },
+        "2单元": {
+            "1": ["101", "102", "103", "104", "105"],
+            "2": ["201", "202", "203", "204", "205"],
+            "3": ["301", "302", "303", "304", "305"],
+            "4": ["401", "402", "403", "404", "405"],
+            "5": ["501", "502", "503", "504", "505"]
+        }
+    },
+    "4栋": {
+        "1单元": {
+            "1": ["101"],
+            "2": ["201"],
+            "3": ["301"],
+            "4": ["401"],
+            "5": ["501"],
+            "6": ["601"],
+            "7": ["701"],
+            "8": ["801"],
+            "9": ["901"],
+            "10": ["1001"],
+            "11": ["1101"],
+            "12": ["1201"],
+            "13": ["1301"],
+            "14": ["1401"],
+            "15": ["1501"]
+        }
+    },
+    "5栋": {
+        "1单元": {
+            "1": ["101", "102", "103"],
+            "2": ["201", "202", "203"],
+            "3": ["301", "302", "303"],
+            "4": ["401", "402", "403"],
+            "5": ["501", "502", "503"],
+            "6": ["601", "602", "603"],
+            "7": ["701", "702", "703"],
+            "8": ["801", "802", "803"],
+            "9": ["901", "902", "903"],
+            "10": ["1001", "1002", "1003"],
+            "11": ["1101", "1102", "1103"],
+            "12": ["1201", "1202", "1203"],
+            "13": ["1301", "1302", "1303"],
+            "14": ["1401", "1402", "1403"],
+            "15": ["1501", "1502", "1503"],
+            "16": ["1601", "1602", "1603"],
+            "17": ["1701", "1702", "1703"],
+            "18": ["1801", "1802", "1803"],
+            "19": ["1901", "1902", "1903"],
+            "20": ["2001", "2002", "2003"]
+        },
+        "2单元": {
+            "1": ["101", "102"],
+            "2": ["201", "202"],
+            "3": ["301", "302"],
+            "4": ["401", "402"],
+            "5": ["501", "502"],
+            "6": ["601", "602"],
+            "7": ["701", "702"],
+            "8": ["801", "802"],
+            "9": ["901", "902"],
+            "10": ["1001", "1002"],
+            "11": ["1101", "1102"],
+            "12": ["1201", "1202"],
+            "13": ["1301", "1302"],
+            "14": ["1401", "1402"],
+            "15": ["1501", "1502"],
+            "16": ["1601", "1602"],
+            "17": ["1701", "1702"],
+            "18": ["1801", "1802"],
+            "19": ["1901", "1902"],
+            "20": ["2001", "2002"]
+        }
+    }
+};
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    const buildingSelect = document.getElementById('building_number');
+    const unitSelect = document.getElementById('unit_number');
+    const floorSelect = document.getElementById('floor');
+    const roomSelect = document.getElementById('room_number');
+    const propertyForm = document.getElementById('propertyForm');
+
+    // 1. 楼栋选择变化时，更新单元列表
+    buildingSelect.addEventListener('change', function() {
+        const selectedBuilding = this.value;
+        // 清空单元、楼层、房号
+        unitSelect.innerHTML = '';
+        floorSelect.innerHTML = '';
+        roomSelect.innerHTML = '';
+
+        if (selectedBuilding) {
+            // 启用单元选择器，禁用楼层和房号
+            unitSelect.disabled = false;
+            floorSelect.disabled = true;
+            roomSelect.disabled = true;
+            // 添加单元选项
+            const units = Object.keys(buildingUnitFloorRoomData[selectedBuilding]);
+            unitSelect.innerHTML = '<option value="">请选择单元</option>';
+            units.forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                // 回显原有单元值
+                if (unit === "{{ form.unit_number.value|default:'' }}") {
+                    option.selected = true;
+                }
+                unitSelect.appendChild(option);
+            });
+
+            // 编辑页面：有原有单元值，自动触发单元变化
+            if ("{{ form.unit_number.value|default:'' }}") {
+                setTimeout(() => {
+                    unitSelect.dispatchEvent(new Event('change'));
+                }, 100);
+            }
+        } else {
+            // 未选择楼栋，禁用所有下级选择器
+            unitSelect.disabled = true;
+            floorSelect.disabled = true;
+            roomSelect.disabled = true;
+            unitSelect.innerHTML = '<option value="">请先选择楼栋</option>';
+            floorSelect.innerHTML = '<option value="">请先选择单元</option>';
+            roomSelect.innerHTML = '<option value="">请先选择楼层</option>';
+        }
+    });
+
+    // 2. 单元选择变化时，更新楼层列表（优先选择楼层）
+    unitSelect.addEventListener('change', function() {
+        const selectedBuilding = buildingSelect.value;
+        const selectedUnit = this.value;
+        // 清空楼层、房号
+        floorSelect.innerHTML = '';
+        roomSelect.innerHTML = '';
+
+        if (selectedUnit) {
+            // 启用楼层选择器，禁用房号
+            floorSelect.disabled = false;
+            roomSelect.disabled = true;
+            // 添加楼层选项
+            const floors = Object.keys(buildingUnitFloorRoomData[selectedBuilding][selectedUnit]);
+            floorSelect.innerHTML = '<option value="">请选择楼层</option>';
+            floors.forEach(floor => {
+                const option = document.createElement('option');
+                option.value = floor;
+                option.textContent = floor;
+                // 回显原有楼层值
+                if (floor === "{{ form.floor.value|default:'' }}") {
+                    option.selected = true;
+                }
+                floorSelect.appendChild(option);
+            });
+
+            // 编辑页面：有原有楼层值，自动触发楼层变化
+            if ("{{ form.floor.value|default:'' }}") {
+                setTimeout(() => {
+                    floorSelect.dispatchEvent(new Event('change'));
+                }, 100);
+            }
+        } else {
+            // 未选择单元，禁用楼层和房号
+            floorSelect.disabled = true;
+            roomSelect.disabled = true;
+            floorSelect.innerHTML = '<option value="">请先选择单元</option>';
+            roomSelect.innerHTML = '<option value="">请先选择楼层</option>';
+        }
+    });
+
+    // 3. 楼层选择变化时，更新房号列表（核心：先选楼层，再选房号）
+    floorSelect.addEventListener('change', function() {
+        const selectedBuilding = buildingSelect.value;
+        const selectedUnit = unitSelect.value;
+        const selectedFloor = this.value;
+        // 清空房号
+        roomSelect.innerHTML = '';
+
+        if (selectedFloor) {
+            // 启用房号选择器
+            roomSelect.disabled = false;
+            // 添加房号选项
+            const rooms = buildingUnitFloorRoomData[selectedBuilding][selectedUnit][selectedFloor];
+            roomSelect.innerHTML = '<option value="">请选择房号</option>';
+            rooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room;
+                option.textContent = room;
+                // 回显原有房号值
+                if (room === "{{ form.room_number.value|default:'' }}") {
+                    option.selected = true;
+                }
+                roomSelect.appendChild(option);
+            });
+        } else {
+            // 未选择楼层，禁用房号
+            roomSelect.disabled = true;
+            roomSelect.innerHTML = '<option value="">请先选择楼层</option>';
+        }
+    });
+
+    // 4. 表单提交验证（增强原生验证，确保级联字段必填）
+    propertyForm.addEventListener('submit', function(e) {
+        const building = buildingSelect.value;
+        const unit = unitSelect.value;
+        const floor = floorSelect.value;
+        const room = roomSelect.value;
+
+        // 级联字段非空验证
+        if (!building) {
+            e.preventDefault();
+            alert('请选择楼栋号！');
+            buildingSelect.focus();
+            return false;
+        }
+        if (!unit) {
+            e.preventDefault();
+            alert('请选择单元号！');
+            unitSelect.focus();
+            return false;
+        }
+        if (!floor) {
+            e.preventDefault();
+            alert('请选择楼层！');
+            floorSelect.focus();
+            return false;
+        }
+        if (!room) {
+            e.preventDefault();
+            alert('请选择房号！');
+            roomSelect.focus();
+            return false;
+        }
+
+        // 价格合法性验证
+        const unitPrice = document.querySelector('[name="unit_price"]').value;
+        const totalPrice = document.querySelector('[name="total_price"]').value;
+        if (unitPrice && isNaN(unitPrice)) {
+            e.preventDefault();
+            alert('单价必须为有效数字！');
+            document.querySelector('[name="unit_price"]').focus();
+            return false;
+        }
+        if (totalPrice && isNaN(totalPrice)) {
+            e.preventDefault();
+            alert('总价必须为有效数字！');
+            document.querySelector('[name="total_price"]').focus();
+            return false;
+        }
+    });
+
+    // 5. 编辑页面：加载时自动回显所有级联数据
+    if ("{{ form.building_number.value|default:'' }}") {
+        buildingSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

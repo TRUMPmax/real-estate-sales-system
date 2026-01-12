@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}房源列表{% endblock %}
+
+{% block content %}
+<h2>房源管理</h2>
+<hr>
+
+{% if user.is_manager or user.is_admin %}
+<div class="mb-3">
+    <a href="{% url 'properties:property_create' %}" class="btn btn-primary">创建房源</a>
+</div>
+{% endif %}
+
+<!-- 搜索表单 -->
+<form method="get" class="mb-3">
+    <div class="row g-3">
+        <!-- 通用搜索框 -->
+        <div class="col-md-3">
+            <input type="text" name="search" class="form-control" placeholder="搜索项目、楼栋或房号" value="{{ search|default:'' }}">
+        </div>
+
+        <!-- 项目选择 -->
+        <div class="col-md-2">
+            <select name="project" id="id_project" class="form-select">
+                <option value="">选择项目</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}" {% if project_id == project.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ project.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 楼栋选择 -->
+        <div class="col-md-2">
+            <select name="building" id="id_building" class="form-select" disabled>
+                <option value="">选择楼栋</option>
+            </select>
+        </div>
+
+        <!-- 单元选择 -->
+        <div class="col-md-2">
+            <select name="unit" id="id_unit" class="form-select" disabled>
+                <option value="">选择单元</option>
+            </select>
+        </div>
+
+        <!-- 楼层选择 -->
+        <div class="col-md-2">
+            <select name="floor" id="id_floor" class="form-select" disabled>
+                <option value="">选择楼层</option>
+            </select>
+        </div>
+
+        <!-- 房号选择 -->
+        <div class="col-md-2">
+            <select name="room" id="id_room" class="form-select" disabled>
+                <option value="">选择房号</option>
+            </select>
+        </div>
+
+        <!-- 价格范围 -->
+        <div class="col-md-2">
+            <input type="number" name="min_price" class="form-control" placeholder="最低价" value="{{ min_price|default:'' }}">
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="max_price" class="form-control" placeholder="最高价" value="{{ max_price|default:'' }}">
+        </div>
+
+        <!-- 按钮 -->
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-secondary w-100">搜索</button>
+        </div>
+        <div class="col-md-1">
+            <a href="{% url 'properties:property_list' %}" class="btn btn-outline-secondary w-100">重置</a>
+        </div>
+    </div>
+</form>
+
+<!-- 房源列表 -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>图片</th>
+            <th>项目</th>
+            <th>位置</th>
+            <th>建筑面积(㎡)</th>
+            <th>单价(元/㎡)</th>
+            <th>总价(元)</th>
+            <th>状态</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for property in properties %}
+        <tr>
+            <td>
+                {% with main_image=property.get_main_image %}
+                {% if main_image %}
+                <img src="{{ main_image.image.url }}" alt="{{ property }}" style="width: 80px; height: 60px; object-fit: cover; border-radius: 5px;">
+                {% else %}
+                <div style="width: 80px; height: 60px; background: #f8f9fa; border-radius: 5px; display: flex; align-items: center; justify-content: center;">
+                    <i class="bi bi-image text-muted"></i>
+                </div>
+                {% endif %}
+                {% endwith %}
+            </td>
+            <td>{{ property.project.name }}</td>
+            <td>{{ property.building_number }}-{{ property.unit_number }}-{{ property.room_number }}</td>
+            <td>{{ property.building_area }}</td>
+            <td>{{ property.unit_price|floatformat:0 }}</td>
+            <td>{{ property.total_price|floatformat:0 }}</td>
+            <td>
+                <span class="badge bg-{% if property.status == 'available' %}success{% elif property.status == 'reserved' %}warning{% else %}secondary{% endif %}">
+                    {{ property.get_status_display }}
+                </span>
+            </td>
+            <td>
+                <a href="{% url 'properties:property_detail' property.pk %}" class="btn btn-sm btn-info">详情</a>
+                {% if user.is_manager or user.is_admin %}
+                <a href="{% url 'properties:property_update' property.pk %}" class="btn btn-sm btn-primary">编辑</a>
+                <a href="{% url 'properties:price_update' property.pk %}" class="btn btn-sm btn-warning">调价</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="8" class="text-center">暂无房源</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if properties.has_other_pages %}
+<nav>
+    <ul class="pagination">
+        {% if properties.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ properties.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">上一页</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link">第 {{ properties.number }} 页，共 {{ properties.paginator.num_pages }} 页</span>
+        </li>
+
+        {% if properties.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ properties.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}">下一页</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const projectSelect = document.getElementById('id_project');
+    const buildingSelect = document.getElementById('id_building');
+    const unitSelect = document.getElementById('id_unit');
+    const floorSelect = document.getElementById('id_floor');
+    const roomSelect = document.getElementById('id_room');
+
+    // API端点URL - 使用与创建房源相同的API
+    const buildingsUrl = "{% url 'properties:get_building_options' %}";
+    const unitsUrl = "{% url 'properties:get_unit_options' %}";
+    const floorsUrl = "{% url 'properties:get_floor_options' %}";
+    const roomsUrl = "{% url 'properties:get_room_options' %}";  // 需要这个API
+
+    // 从URL获取已选中的值
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedProject = urlParams.get('project') || '';
+    const selectedBuilding = urlParams.get('building') || '';
+    const selectedUnit = urlParams.get('unit') || '';
+    const selectedFloor = urlParams.get('floor') || '';
+    const selectedRoom = urlParams.get('room') || '';
+
+    // 辅助函数：更新选择框
+    function updateSelect(selectElement, options, disabled = false) {
+        selectElement.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = disabled ? '请先选择上级' : '请选择';
+        selectElement.appendChild(placeholder);
+
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.value;
+            opt.textContent = option.text;
+
+            // 如果是当前选中的值，设置为选中
+            if (option.value === getCurrentValue(selectElement.id)) {
+                opt.selected = true;
+            }
+
+            selectElement.appendChild(opt);
+        });
+
+        selectElement.disabled = disabled;
+    }
+
+    // 辅助函数：获取当前选中值
+    function getCurrentValue(selectId) {
+        switch(selectId) {
+            case 'id_building': return selectedBuilding;
+            case 'id_unit': return selectedUnit;
+            case 'id_floor': return selectedFloor;
+            case 'id_room': return selectedRoom;
+            default: return '';
+        }
+    }
+
+    // 辅助函数：清空并禁用选择框
+    function clearAndDisableSelect(selectElement, placeholder) {
+        selectElement.innerHTML = '';
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '';
+        placeholderOption.textContent = placeholder;
+        selectElement.appendChild(placeholderOption);
+        selectElement.disabled = true;
+        selectElement.value = '';
+    }
+
+    // 1. 项目选择变化时，获取楼栋选项
+    projectSelect.addEventListener('change', function() {
+        const projectId = this.value;
+
+        // 清空并禁用所有下级选择器
+        clearAndDisableSelect(buildingSelect, '选择楼栋');
+        clearAndDisableSelect(unitSelect, '选择单元');
+        clearAndDisableSelect(floorSelect, '选择楼层');
+        clearAndDisableSelect(roomSelect, '选择房号');
+
+        if (projectId) {
+            // 显示加载状态
+            buildingSelect.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${buildingsUrl}?project_id=${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.buildings) {
+                        updateSelect(buildingSelect, data.buildings, false);
+
+                        // 如果URL中有楼栋参数，触发楼栋change事件
+                        if (selectedBuilding) {
+                            setTimeout(() => {
+                                buildingSelect.value = selectedBuilding;
+                                buildingSelect.dispatchEvent(new Event('change'));
+                            }, 100);
+                        }
+                    } else {
+                        clearAndDisableSelect(buildingSelect, '加载失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取楼栋失败:', error);
+                    clearAndDisableSelect(buildingSelect, '加载失败');
+                });
+        }
+    });
+
+    // 2. 楼栋选择变化时，获取单元选项
+    buildingSelect.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = this.value;
+
+        // 清空并禁用单元、楼层和房号
+        clearAndDisableSelect(unitSelect, '选择单元');
+        clearAndDisableSelect(floorSelect, '选择楼层');
+        clearAndDisableSelect(roomSelect, '选择房号');
+
+        if (projectId && buildingNumber) {
+            // 显示加载状态
+            unitSelect.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${unitsUrl}?project_id=${projectId}&building_number=${buildingNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.units) {
+                        updateSelect(unitSelect, data.units, false);
+
+                        // 如果URL中有单元参数，触发单元change事件
+                        if (selectedUnit) {
+                            setTimeout(() => {
+                                unitSelect.value = selectedUnit;
+                                unitSelect.dispatchEvent(new Event('change'));
+                            }, 100);
+                        }
+                    } else {
+                        clearAndDisableSelect(unitSelect, '加载失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取单元失败:', error);
+                    clearAndDisableSelect(unitSelect, '加载失败');
+                });
+        }
+    });
+
+    // 3. 单元选择变化时，获取楼层选项
+    unitSelect.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = buildingSelect.value;
+        const unitNumber = this.value;
+
+        // 清空并禁用楼层和房号
+        clearAndDisableSelect(floorSelect, '选择楼层');
+        clearAndDisableSelect(roomSelect, '选择房号');
+
+        if (projectId && buildingNumber && unitNumber) {
+            // 显示加载状态
+            floorSelect.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${floorsUrl}?project_id=${projectId}&building_number=${buildingNumber}&unit_number=${unitNumber}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.floors) {
+                        updateSelect(floorSelect, data.floors, false);
+
+                        // 如果URL中有楼层参数，触发楼层change事件
+                        if (selectedFloor) {
+                            setTimeout(() => {
+                                floorSelect.value = selectedFloor;
+                                floorSelect.dispatchEvent(new Event('change'));
+                            }, 100);
+                        }
+                    } else {
+                        clearAndDisableSelect(floorSelect, '加载失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取楼层失败:', error);
+                    clearAndDisableSelect(floorSelect, '加载失败');
+                });
+        }
+    });
+
+    // 4. 楼层选择变化时，获取房号选项
+    floorSelect.addEventListener('change', function() {
+        const projectId = projectSelect.value;
+        const buildingNumber = buildingSelect.value;
+        const unitNumber = unitSelect.value;
+        const floor = this.value;
+
+        // 清空房号选择
+        clearAndDisableSelect(roomSelect, '选择房号');
+
+        if (projectId && buildingNumber && unitNumber && floor) {
+            // 显示加载状态
+            roomSelect.innerHTML = '<option value="">加载中...</option>';
+
+            fetch(`${roomsUrl}?project_id=${projectId}&building_number=${buildingNumber}&unit_number=${unitNumber}&floor=${floor}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.rooms) {
+                        updateSelect(roomSelect, data.rooms, false);
+
+                        // 如果URL中有房号参数，设置房号值
+                        if (selectedRoom) {
+                            setTimeout(() => {
+                                roomSelect.value = selectedRoom;
+                            }, 100);
+                        }
+                    } else {
+                        clearAndDisableSelect(roomSelect, '加载失败');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取房号失败:', error);
+                    clearAndDisableSelect(roomSelect, '加载失败');
+                });
+        }
+    });
+
+    // 5. 页面加载时，如果有选中的项目，初始化级联
+    if (selectedProject) {
+        projectSelect.value = selectedProject;
+
+        // 延迟触发change事件，确保级联加载
+        setTimeout(() => {
+            projectSelect.dispatchEvent(new Event('change'));
+        }, 100);
+    }
+});
+</script>
+{% endblock %}
